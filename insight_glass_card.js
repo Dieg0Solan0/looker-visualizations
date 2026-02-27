@@ -35,64 +35,28 @@ looker.plugins.visualizations.add({
 
   create: function(element, config) {
     element.innerHTML = "";
-    element.style.cssText = `
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Google Sans', 'Segoe UI', Arial, sans-serif;
-      background: transparent;
-      box-sizing: border-box;
-      padding: 0;
-    `;
+    element.style.cssText = [
+      "width:100%",
+      "height:100%",
+      "display:flex",
+      "align-items:center",
+      "justify-content:center",
+      "font-family:'Google Sans','Segoe UI',Arial,sans-serif",
+      "background:transparent",
+      "box-sizing:border-box",
+      "padding:0"
+    ].join(";");
 
-    const style = document.createElement("style");
-    style.textContent = `
-      .igc-wrapper {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: stretch;
-        justify-content: stretch;
-        padding: 6px;
-        box-sizing: border-box;
-      }
-      .igc-card {
-        width: 100%;
-        border-radius: 14px;
-        border: 1px solid rgba(255, 255, 255, 0.75);
-        padding: 14px 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow:
-          0 2px 16px rgba(0, 0, 0, 0.07),
-          inset 0 1px 0 rgba(255, 255, 255, 0.85);
-        transition: box-shadow 0.25s ease, transform 0.25s ease;
-        box-sizing: border-box;
-      }
-      .igc-card:hover {
-        box-shadow:
-          0 6px 24px rgba(0, 0, 0, 0.12),
-          inset 0 1px 0 rgba(255, 255, 255, 0.9);
-        transform: translateY(-2px);
-      }
-      .igc-text {
-        line-height: 1.6;
-        font-weight: 500;
-        text-align: center;
-      }
-      .igc-error {
-        font-size: 12px;
-        color: #999;
-        font-style: italic;
-        text-align: center;
-      }
-    `;
+    var style = document.createElement("style");
+    style.textContent = "\
+      .igc-wrapper{width:100%;height:100%;display:flex;align-items:stretch;justify-content:stretch;padding:6px;box-sizing:border-box;}\
+      .igc-card{width:100%;border-radius:14px;border:1px solid rgba(255,255,255,0.75);padding:14px 18px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 16px rgba(0,0,0,0.07),inset 0 1px 0 rgba(255,255,255,0.85);box-sizing:border-box;}\
+      .igc-text{line-height:1.6;font-weight:500;text-align:center;word-break:break-word;}\
+      .igc-error{font-size:11px;color:#c0392b;font-style:italic;text-align:center;padding:8px;}\
+    ";
     element.appendChild(style);
 
-    const wrapper = document.createElement("div");
+    var wrapper = document.createElement("div");
     wrapper.className = "igc-wrapper";
     element.appendChild(wrapper);
 
@@ -100,41 +64,62 @@ looker.plugins.visualizations.add({
   },
 
   updateAsync: function(data, element, config, queryResponse, details, done) {
-    const opacity  = Math.min(0.9, Math.max(0.05, config.bg_opacity || 0.35));
-    const blur     = Math.max(0, config.blur_amount || 14);
-    const txtColor = config.text_color || "#2c3e7a";
-    const fontSize = config.font_size  || 13;
+    try {
+      var opacity  = Math.min(0.9, Math.max(0.05, parseFloat(config.bg_opacity) || 0.35));
+      var blur     = Math.max(0, parseInt(config.blur_amount) || 14);
+      var txtColor = config.text_color || "#2c3e7a";
+      var fontSize = parseInt(config.font_size) || 13;
 
-    // ── Leer el valor de la primera dimensión o medida disponible ──
-    let insightText = null;
+      var insightText = null;
 
-    const allFields = [
-      ...(queryResponse.fields.dimensions || []),
-      ...(queryResponse.fields.measures   || [])
-    ];
+      // Buscar en todas las medidas y dimensiones
+      var allFields = []
+        .concat(queryResponse.fields.dimensions || [])
+        .concat(queryResponse.fields.measures   || []);
 
-    if (data && data.length > 0 && allFields.length > 0) {
-      const field = allFields[0];
-      const cell  = data[0][field.name];
-      if (cell) {
-        insightText = cell.rendered != null ? cell.rendered : cell.value;
+      if (data && data.length > 0 && allFields.length > 0) {
+        for (var i = 0; i < allFields.length; i++) {
+          var field = allFields[i];
+          var cell  = data[0][field.name];
+
+          if (!cell) continue;
+
+          // Intentar todas las formas posibles de obtener el valor
+          var val = null;
+          if (typeof cell.rendered === "string" && cell.rendered.length > 0) {
+            val = cell.rendered;
+          } else if (typeof cell.value === "string" && cell.value.length > 0) {
+            val = cell.value;
+          } else if (cell.value !== null && cell.value !== undefined) {
+            val = String(cell.value);
+          }
+
+          if (val) {
+            insightText = val;
+            break;
+          }
+        }
       }
+
+      var cardContent;
+      if (insightText) {
+        cardContent = '<span class="igc-text" style="font-size:' + fontSize + 'px;color:' + txtColor + ';">' + insightText + '</span>';
+      } else {
+        var debugInfo = "Campos disponibles: " + allFields.map(function(f){ return f.name; }).join(", ");
+        cardContent = '<span class="igc-error">Sin datos.<br><small>' + debugInfo + '</small></span>';
+      }
+
+      this._wrapper.innerHTML =
+        '<div class="igc-card" style="' +
+          'background:rgba(215,220,232,' + opacity + ');' +
+          'backdrop-filter:blur(' + blur + 'px);' +
+          '-webkit-backdrop-filter:blur(' + blur + 'px);' +
+          'color:' + txtColor + ';' +
+        '">' + cardContent + '</div>';
+
+    } catch(e) {
+      this._wrapper.innerHTML = '<div class="igc-card" style="background:rgba(215,220,232,0.35);"><span class="igc-error">Error: ' + e.message + '</span></div>';
     }
-
-    const cardContent = insightText
-      ? `<span class="igc-text" style="font-size:${fontSize}px; color:${txtColor};">${insightText}</span>`
-      : `<span class="igc-error">Sin datos — conecta la medida<br><em>dynamic_efficiency_insight</em> o <em>dynamic_customer_behavior_insight</em></span>`;
-
-    this._wrapper.innerHTML = `
-      <div class="igc-card" style="
-        background: rgba(215, 220, 232, ${opacity});
-        backdrop-filter: blur(${blur}px);
-        -webkit-backdrop-filter: blur(${blur}px);
-        color: ${txtColor};
-      ">
-        ${cardContent}
-      </div>
-    `;
 
     done();
   }
