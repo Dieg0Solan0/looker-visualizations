@@ -9,19 +9,20 @@
     },
 
     create: function(element, config) {
-      // Forzamos al elemento raíz a ser un contenedor total
-      element.style.padding = "0";
-      element.style.margin = "0";
+      // Ajuste agresivo para eliminar bordes blancos en todos los lados
       element.style.position = "absolute";
-      element.style.top = "0";
-      element.style.left = "0";
-      element.style.right = "0";
-      element.style.bottom = "0";
+      element.style.top = "-1px";
+      element.style.left = "-1px";
+      // Usamos 101% para asegurar que cubra la franja derecha e inferior
+      element.style.width = "calc(100% + 2px)"; 
+      element.style.height = "calc(100% + 2px)";
+      element.style.margin = "0";
+      element.style.padding = "0";
       element.style.overflow = "hidden";
 
       element.innerHTML = `
         <style>
-          .full-fill-container {
+          .ultimate-wrapper {
             width: 100%;
             height: 100%;
             display: flex;
@@ -29,7 +30,6 @@
             align-items: center;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
           }
           .custom-card {
             width: 100%;
@@ -37,18 +37,20 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: 'Open Sans', sans-serif;
+            font-family: sans-serif;
             text-align: center;
-            margin: 0;
-            padding: 0;
           }
           #viz-content {
             width: 100%;
-            line-height: 1;
+            line-height: 1.1;
+            padding: 10px;
+            box-sizing: border-box;
           }
         </style>
-        <div class="full-fill-container" id="viz-container">
-          <div id="viz-content">Cargando...</div>
+        <div class="ultimate-wrapper" id="viz-container">
+          <div class="custom-card">
+            <div id="viz-content">Cargando...</div>
+          </div>
         </div>`;
     },
 
@@ -58,7 +60,7 @@
 
       if (container) {
         container.style.backgroundColor = config.backgroundColor || "#ffffff";
-        // Si quieres que el borde sea invisible para que se pegue al fondo, desactívalo en el panel
+        // Si hay borde, lo aplicamos; si no, 'none' para que el color llegue al límite
         container.style.border = config.borderShow ? `1px solid ${config.borderColor || "#e0e0e0"}` : "none";
       }
       
