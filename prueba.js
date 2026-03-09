@@ -1,4 +1,4 @@
-looker.visualizations.add({
+looker.plugins.visualizations.add({
   options: {
     backgroundColor: {
       type: "string",
@@ -22,67 +22,78 @@ looker.visualizations.add({
   create: function(element, config) {
     element.innerHTML = `
       <style>
-        .main-container {
+        .main-card-container {
           height: 100%;
           display: flex;
           justify-content: center;
           align-items: center;
           padding: 10px;
           box-sizing: border-box;
-          overflow: hidden;
+          width: 100%;
         }
-        .card {
+        .premium-card {
           display: flex;
           justify-content: center;
           align-items: center;
-          width: 98%;
-          height: 98%;
+          width: 100%;
+          height: 100%;
           border: 1px solid #e0e0e0;
           border-radius: 4px;
           text-align: center;
-          font-family: sans-serif;
+          font-family: 'Open Sans', sans-serif;
           box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+          transition: all 0.3s ease;
         }
-        #viz-value {
+        #viz-text-value {
           color: #000000;
-          width: 100%;
-          word-wrap: break-word;
+          padding: 20px;
+          line-height: 1.2;
         }
       </style>
-      <div class="main-container">
-        <div class="card" id="viz-card">
-          <div id="viz-value">Iniciando...</div>
+      <div class="main-card-container">
+        <div class="premium-card" id="viz-card-element">
+          <div id="viz-text-value">Cargando...</div>
         </div>
       </div>
     `;
   },
 
   updateAsync: function(data, element, config, queryResponse, details, done) {
-    const card = document.getElementById('viz-card');
-    const valueDisplay = document.getElementById('viz-value');
+    const card = document.getElementById('viz-card-element');
+    const textValue = document.getElementById('viz-text-value');
 
-    // Aplicar estilos
+    // 1. Aplicar estilos desde el panel de Looker
     card.style.backgroundColor = config.backgroundColor || "#ffffff";
     card.style.borderColor = config.borderColor || "#e0e0e0";
-    valueDisplay.style.fontSize = (config.fontSize || 28) + "px";
+    textValue.style.fontSize = (config.fontSize || 28) + "px";
 
-    // Extraer dato
-    if (data && data.length > 0) {
-      const firstRow = data[0];
-      const dimensions = queryResponse.fields.dimension_like;
-      const measures = queryResponse.fields.measure_like;
-      const firstField = (dimensions && dimensions.length > 0) ? dimensions[0] : (measures && measures.length > 0 ? measures[0] : null);
+    // 2. Captura de datos (Misma lógica robusta del Bubble Chart)
+    try {
+      if (data && data.length > 0) {
+        const firstRow = data[0];
+        // Buscamos tanto en dimensiones como en medidas
+        const fields = [
+          ...(queryResponse.fields.dimensions || []),
+          ...(queryResponse.fields.measures || []),
+          ...(queryResponse.fields.dimension_like || []),
+          ...(queryResponse.fields.measure_like || [])
+        ];
 
-      if (firstField && firstRow[firstField.name]) {
-        const cell = firstRow[firstField.name];
-        // Looker guarda el valor en .value o .rendered
-        const val = cell.rendered !== undefined ? cell.rendered : cell.value;
-        valueDisplay.innerHTML = val;
+        if (fields.length > 0) {
+          const firstFieldName = fields[0].name;
+          const cell = firstRow[firstFieldName];
+          
+          // Priorizamos el valor renderizado (formateado) sobre el valor bruto
+          textValue.innerHTML = cell.rendered !== undefined ? cell.rendered : cell.value;
+        } else {
+          textValue.innerText = "Selecciona un campo";
+        }
       } else {
-        valueDisplay.innerText = "Sin datos";
+        textValue.innerText = "No hay datos";
       }
-    } else {
-      valueDisplay.innerText = "Esperando resultados...";
+    } catch (e) {
+      textValue.innerText = "Error al cargar datos";
+      console.error(e);
     }
 
     done();
