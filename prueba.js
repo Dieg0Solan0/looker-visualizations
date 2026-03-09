@@ -9,47 +9,46 @@
     },
 
     create: function(element, config) {
-      // Forzamos al elemento padre de Looker a no tener scroll ni rellenos
+      // Forzamos al elemento raíz a ser un contenedor total
       element.style.padding = "0";
       element.style.margin = "0";
-      element.style.display = "block";
+      element.style.position = "absolute";
+      element.style.top = "0";
+      element.style.left = "0";
+      element.style.right = "0";
+      element.style.bottom = "0";
       element.style.overflow = "hidden";
 
       element.innerHTML = `
         <style>
-          /* Contenedor que elimina cualquier margen externo del tile */
-          .full-height-wrapper { 
-            height: 100vh; 
-            width: 100%; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
+          .full-fill-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             margin: 0;
             padding: 0;
             box-sizing: border-box;
           }
           .custom-card {
-            width: 100%; 
-            height: 100%; 
-            display: flex; 
-            justify-content: center; 
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
             align-items: center;
-            font-family: sans-serif; 
+            font-family: 'Open Sans', sans-serif;
             text-align: center;
-            box-sizing: border-box;
-          }
-          #viz-content { 
-            width: 100%; 
-            /* Quitamos line-height para que no empuje el texto hacia abajo */
-            line-height: normal; 
             margin: 0;
             padding: 0;
           }
+          #viz-content {
+            width: 100%;
+            line-height: 1;
+          }
         </style>
-        <div class="full-height-wrapper">
-          <div class="custom-card" id="viz-container">
-            <div id="viz-content">Cargando...</div>
-          </div>
+        <div class="full-fill-container" id="viz-container">
+          <div id="viz-content">Cargando...</div>
         </div>`;
     },
 
@@ -59,7 +58,7 @@
 
       if (container) {
         container.style.backgroundColor = config.backgroundColor || "#ffffff";
-        // Si borderShow es false, eliminamos el borde por completo para que sea plano
+        // Si quieres que el borde sea invisible para que se pegue al fondo, desactívalo en el panel
         container.style.border = config.borderShow ? `1px solid ${config.borderColor || "#e0e0e0"}` : "none";
       }
       
