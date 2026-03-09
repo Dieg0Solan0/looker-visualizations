@@ -4,69 +4,62 @@
       backgroundColor: { type: "string", label: "Color de Fondo", default: "#ffffff", display: "color" },
       textColor: { type: "string", label: "Color del Texto", default: "#333333", display: "color" },
       fontSize: { type: "number", label: "Tamaño de Fuente (px)", default: 28 },
-      borderColor: { type: "string", label: "Color del Borde", default: "#e0e0e0", display: "color" },
-      borderShow: { type: "boolean", label: "Mostrar Borde", default: true }
+      fontWeight: { 
+        type: "string", 
+        label: "Grosor de letra", 
+        default: "500", 
+        display: "select", 
+        values: [{"Normal": "400"}, {"Media": "500"}, {"Negrita": "700"}] 
+      }
     },
 
     create: function(element, config) {
-      // Ajuste agresivo para eliminar bordes blancos en todos los lados
-      element.style.position = "absolute";
-      element.style.top = "-1px";
-      element.style.left = "-1px";
-      // Usamos 101% para asegurar que cubra la franja derecha e inferior
-      element.style.width = "calc(100% + 2px)"; 
-      element.style.height = "calc(100% + 2px)";
-      element.style.margin = "0";
+      // Ajuste para que el contenedor raíz no genere scroll
       element.style.padding = "0";
+      element.style.margin = "0";
       element.style.overflow = "hidden";
+      element.style.display = "flex";
 
       element.innerHTML = `
         <style>
-          .ultimate-wrapper {
+          #viz-outer-container {
             width: 100%;
             height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
+            overflow: hidden; /* Bloquea cualquier scroll interno */
             margin: 0;
             padding: 0;
           }
-          .custom-card {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: sans-serif;
-            text-align: center;
-          }
           #viz-content {
             width: 100%;
-            line-height: 1.1;
-            padding: 10px;
+            text-align: center;
+            line-height: 1;
+            padding: 5px;
             box-sizing: border-box;
+            user-select: none; /* Evita selección accidental al mover tiles */
           }
         </style>
-        <div class="ultimate-wrapper" id="viz-container">
-          <div class="custom-card">
-            <div id="viz-content">Cargando...</div>
-          </div>
+        <div id="viz-outer-container">
+          <div id="viz-content">Cargando...</div>
         </div>`;
     },
 
     updateAsync: function(data, element, config, queryResponse, details, done) {
-      const container = document.getElementById('viz-container');
+      const container = document.getElementById('viz-outer-container');
       const content = document.getElementById('viz-content');
 
+      // Aplicar estilos del panel
       if (container) {
         container.style.backgroundColor = config.backgroundColor || "#ffffff";
-        // Si hay borde, lo aplicamos; si no, 'none' para que el color llegue al límite
-        container.style.border = config.borderShow ? `1px solid ${config.borderColor || "#e0e0e0"}` : "none";
       }
       
       if (content) {
         content.style.fontSize = (config.fontSize || 28) + "px";
         content.style.color = config.textColor || "#333333";
+        content.style.fontWeight = config.fontWeight || "500";
+        content.style.fontFamily = "Open Sans, sans-serif";
       }
 
       try {
