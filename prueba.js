@@ -1,64 +1,140 @@
-looker.viz.add({
-  // 1. Definimos las opciones que aparecerán en el panel "Edit"
-  options: {
-    border_left_color: {
-      type: "string",
-      label: "Color Borde Izquierdo",
-      default: "#004080",
-      display: "color",
-      section: "Bordes"
+/**
+ * Looker Custom Visualization — Styled Text Card
+ * 
+ * This visualization displays a single text value (or a custom override) 
+ * as a stylized rectangular card.
+ * 
+ * Options:
+ * - Font Size & Color
+ * - Background Color & Border Radius
+ * - Bold / Centering
+ * - Custom Text Override
+ */
+
+looker.plugins.visualizations.add({
+    id: "custom_text_title_card",
+    label: "Styled Text Card",
+    options: {
+        font_size: {
+            type: "number",
+            label: "Font Size (px)",
+            default: 18,
+            section: "Style",
+            order: 1
+        },
+        text_color: {
+            type: "string",
+            label: "Text Color",
+            display: "color",
+            default: "#0033a0",
+            section: "Style",
+            order: 2
+        },
+        bg_color: {
+            type: "string",
+            label: "Background Color",
+            display: "color",
+            default: "#ffffff",
+            section: "Style",
+            order: 3
+        },
+        border_color: {
+            type: "string",
+            label: "Border Color",
+            display: "color",
+            default: "#dfe1e5",
+            section: "Style",
+            order: 4
+        },
+        border_radius: {
+            type: "number",
+            label: "Border Radius (px)",
+            default: 4,
+            section: "Style",
+            order: 5
+        },
+        is_bold: {
+            type: "boolean",
+            label: "Bold Text",
+            default: true,
+            section: "Style",
+            order: 6
+        },
+        text_align: {
+            type: "string",
+            label: "Text Alignment",
+            display: "select",
+            values: [
+                { "Left": "left" },
+                { "Center": "center" },
+                { "Right": "right" }
+            ],
+            default: "center",
+            section: "Style",
+            order: 7
+        },
+        custom_label: {
+            type: "string",
+            label: "Custom Text Override",
+            default: "",
+            section: "Content",
+            order: 1
+        }
     },
-    border_left_width: {
-      type: "number",
-      label: "Grosor Izquierdo (px)",
-      default: 5,
-      section: "Bordes"
+
+    /* ------------------------------------------------------------------ */
+    /*  create: one-time DOM setup                                        */
+    /* ------------------------------------------------------------------ */
+    create: function (element, config) {
+        element.innerHTML = "";
+        var container = document.createElement("div");
+        container.id = "text-card-container";
+        container.style.cssText = "width:100%; height:100%; display:flex; box-sizing:border-box;";
+        element.appendChild(container);
+
+        var textElement = document.createElement("div");
+        textElement.id = "text-card-content";
+        textElement.style.cssText = "width:100%; display:flex; align-items:center;";
+        container.appendChild(textElement);
     },
-    border_top_color: {
-      type: "string",
-      label: "Color Borde Superior",
-      default: "#E0E0E0",
-      display: "color",
-      section: "Bordes"
-    },
-    // Puedes repetir esto para border_right y border_bottom
-  },
 
-  create: function(element, config) {
-    element.innerHTML = `<div id="viz-container"></div>`;
-  },
+    /* ------------------------------------------------------------------ */
+    /*  updateAsync: render / re-render on every data change              */
+    /* ------------------------------------------------------------------ */
+    updateAsync: function (data, element, config, queryResponse, details, done) {
+        var container = element.querySelector("#text-card-container");
+        var content = element.querySelector("#text-card-content");
 
-  updateAsync: function(data, element, config, queryResponse) {
-    const container = element.querySelector("#viz-container");
-    const firstRow = data[0];
-    const measures = queryResponse.fields.measure_like;
+        // Clear previous errors
+        this.clearErrors();
 
-    // Extraemos el valor principal (Single Value) y los secundarios (Multiple)
-    const mainValue = firstRow[measures[0].name].value;
-    const secondaryValues = measures.slice(1).map(m => {
-      return `<div style="text-align:center;">
-                <p style="margin:0; font-size:10px; color:#666;">${m.label_short || m.label}</p>
-                <p style="margin:0; font-size:14px; font-weight:bold;">${firstRow[m.name].value}</p>
-              </div>`;
-    }).join("");
+        // Determine text to show
+        var displayText = "";
+        if (config.custom_label) {
+            displayText = config.custom_label;
+        } else if (data && data.length > 0) {
+            // Use first available dimension or measure
+            var firstField = queryResponse.fields.dimension_like[0] || queryResponse.fields.measure_like[0];
+            if (firstField) {
+                displayText = data[0][firstField.name].rendered || data[0][firstField.name].value;
+            }
+        }
 
-    // Aplicamos el diseño con bordes independientes
-    container.innerHTML = `
-      <div style="
-        background: white;
-        padding: 15px;
-        border-left: ${config.border_left_width}px solid ${config.border_left_color};
-        border-top: 1px solid ${config.border_top_color};
-        border-right: 1px solid #E0E0E0;
-        border-bottom: 1px solid #E0E0E0;
-        font-family: sans-serif;
-      ">
-        <div style="font-size: 32px; font-weight: bold; margin-bottom: 15px;">${mainValue}</div>
-        <div style="display: flex; justify-content: space-around; border-top: 1px solid #EEE; pt: 10px;">
-          ${secondaryValues}
-        </div>
-      </div>
-    `;
-    this.done();
-  }
+        // Apply styles from config
+        container.style.backgroundColor = config.bg_color || "#ffffff";
+        container.style.border = "1px solid " + (config.border_color || "#dfe1e5");
+        container.style.borderRadius = (config.border_radius || 4) + "px";
+        container.style.padding = "8px 16px";
+
+        content.style.justifyContent = config.text_align === "left" ? "flex-start" : config.text_align === "right" ? "flex-end" : "center";
+        content.style.textAlign = config.text_align || "center";
+        content.style.fontSize = (config.font_size || 18) + "px";
+        content.style.color = config.text_color || "#0033a0";
+        content.style.fontWeight = config.is_bold ? "bold" : "normal";
+        content.style.fontFamily = "Inter, Roboto, 'Helvetica Neue', Arial, sans-serif";
+
+        content.innerText = displayText;
+
+        done();
+    }
 });
