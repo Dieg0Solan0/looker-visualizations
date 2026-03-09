@@ -22,8 +22,6 @@ looker.visualizations.add({
   create: function(element, config) {
     element.innerHTML = `
       <style>
-        @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap');
-        
         .main-container {
           height: 100%;
           display: flex;
@@ -31,27 +29,29 @@ looker.visualizations.add({
           align-items: center;
           padding: 10px;
           box-sizing: border-box;
+          overflow: hidden;
         }
         .card {
           display: flex;
           justify-content: center;
           align-items: center;
-          width: 95%;
-          height: 90%;
+          width: 98%;
+          height: 98%;
           border: 1px solid #e0e0e0;
           border-radius: 4px;
           text-align: center;
-          font-family: 'Open Sans', sans-serif;
+          font-family: sans-serif;
           box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         #viz-value {
           color: #000000;
           width: 100%;
+          word-wrap: break-word;
         }
       </style>
       <div class="main-container">
         <div class="card" id="viz-card">
-          <div id="viz-value">Cargando...</div>
+          <div id="viz-value">Iniciando...</div>
         </div>
       </div>
     `;
@@ -61,29 +61,28 @@ looker.visualizations.add({
     const card = document.getElementById('viz-card');
     const valueDisplay = document.getElementById('viz-value');
 
-    // Aplicar estilos desde el panel
+    // Aplicar estilos
     card.style.backgroundColor = config.backgroundColor || "#ffffff";
     card.style.borderColor = config.borderColor || "#e0e0e0";
-    valueDisplay.style.fontSize = `${config.fontSize}px`;
+    valueDisplay.style.fontSize = (config.fontSize || 28) + "px";
 
-    // Extraer el dato de forma segura
-    try {
-        if (data && data.length > 0) {
-            // Buscamos la primera celda del primer registro
-            const firstRow = data[0];
-            const firstFieldName = queryResponse.fields.dimension_like[0]?.name || queryResponse.fields.measure_like[0]?.name;
-            
-            if (firstFieldName && firstRow[firstFieldName]) {
-                const cell = firstRow[firstFieldName];
-                // Intentamos obtener el valor renderizado, si no, el valor bruto
-                valueDisplay.innerText = cell.rendered || cell.value || "";
-            } else {
-                valueDisplay.innerText = "Sin datos";
-            }
-        }
-    } catch (error) {
-        valueDisplay.innerText = "Error de datos";
-        console.error(error);
+    // Extraer dato
+    if (data && data.length > 0) {
+      const firstRow = data[0];
+      const dimensions = queryResponse.fields.dimension_like;
+      const measures = queryResponse.fields.measure_like;
+      const firstField = (dimensions && dimensions.length > 0) ? dimensions[0] : (measures && measures.length > 0 ? measures[0] : null);
+
+      if (firstField && firstRow[firstField.name]) {
+        const cell = firstRow[firstField.name];
+        // Looker guarda el valor en .value o .rendered
+        const val = cell.rendered !== undefined ? cell.rendered : cell.value;
+        valueDisplay.innerHTML = val;
+      } else {
+        valueDisplay.innerText = "Sin datos";
+      }
+    } else {
+      valueDisplay.innerText = "Esperando resultados...";
     }
 
     done();
