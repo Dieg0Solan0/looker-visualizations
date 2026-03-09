@@ -10,18 +10,35 @@
       element.innerHTML = `
         <style>
           .main-wrapper { 
-            height: 100%; width: 100%; display: flex; 
-            justify-content: center; align-items: center; 
-            box-sizing: border-box; padding: 10px;
+            height: 100%; 
+            width: 100%; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            box-sizing: border-box; 
+            padding: 2px; /* Reducido para que el borde esté más afuera */
           }
           .custom-card {
-            width: 100%; height: 100%; display: flex; 
-            justify-content: center; align-items: center;
-            border: 1px solid #e0e0e0; border-radius: 4px;
-            font-family: sans-serif; text-align: center;
+            width: 100%; 
+            height: 100%; 
+            display: flex; 
+            flex-direction: column; /* Asegura el eje para centrado vertical */
+            justify-content: center; 
+            align-items: center;
+            border: 1px solid #e0e0e0; 
+            border-radius: 4px;
+            font-family: sans-serif; 
+            text-align: center;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            overflow: hidden; /* Evita que el texto se salga si es muy grande */
           }
-          #viz-content { width: 100%; color: #333; font-weight: 500; }
+          #viz-content { 
+            width: 100%; 
+            color: #333; 
+            font-weight: 500;
+            padding: 5px; /* Espacio interno para que el texto no toque el borde */
+            box-sizing: border-box;
+          }
         </style>
         <div class="main-wrapper">
           <div class="custom-card" id="viz-container">
