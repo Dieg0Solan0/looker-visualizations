@@ -2,42 +2,31 @@
   const vizObject = {
     options: {
       backgroundColor: { type: "string", label: "Color de Fondo", default: "#ffffff", display: "color" },
+      textColor: { type: "string", label: "Color del Texto", default: "#333333", display: "color" },
+      fontSize: { type: "number", label: "Tamaño de Fuente (px)", default: 28 },
       borderColor: { type: "string", label: "Color del Borde", default: "#e0e0e0", display: "color" },
-      fontSize: { type: "number", label: "Tamaño de Fuente (px)", default: 28 }
+      borderShow: { type: "boolean", label: "Mostrar Borde", default: true }
     },
 
     create: function(element, config) {
       element.innerHTML = `
         <style>
           .main-wrapper { 
-            height: 100%; 
-            width: 100%; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            box-sizing: border-box; 
-            padding: 2px; /* Reducido para que el borde esté más afuera */
+            height: 100%; width: 100%; display: flex; 
+            justify-content: center; align-items: center; 
+            box-sizing: border-box; padding: 0;
           }
           .custom-card {
-            width: 100%; 
-            height: 100%; 
-            display: flex; 
-            flex-direction: column; /* Asegura el eje para centrado vertical */
-            justify-content: center; 
-            align-items: center;
-            border: 1px solid #e0e0e0; 
+            width: 100%; height: 100%; display: flex; 
+            justify-content: center; align-items: center;
+            font-family: sans-serif; text-align: center;
             border-radius: 4px;
-            font-family: sans-serif; 
-            text-align: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            overflow: hidden; /* Evita que el texto se salga si es muy grande */
+            /* Se eliminó box-shadow para quitar el relieve */
           }
           #viz-content { 
             width: 100%; 
-            color: #333; 
-            font-weight: 500;
-            padding: 5px; /* Espacio interno para que el texto no toque el borde */
-            box-sizing: border-box;
+            line-height: 1; /* Ayuda al centrado vertical exacto */
+            margin: 0;
           }
         </style>
         <div class="main-wrapper">
@@ -51,43 +40,33 @@
       const container = document.getElementById('viz-container');
       const content = document.getElementById('viz-content');
 
-      // Aplicar estilos personalizados
+      // Aplicar estilos y centrado
       if (container) {
         container.style.backgroundColor = config.backgroundColor || "#ffffff";
-        container.style.borderColor = config.borderColor || "#e0e0e0";
+        container.style.border = config.borderShow ? `1px solid ${config.borderColor || "#e0e0e0"}` : "none";
       }
       if (content) {
         content.style.fontSize = (config.fontSize || 28) + "px";
+        content.style.color = config.textColor || "#333333";
       }
 
-      // Lógica de captura de datos inspirada en Multiple Value
       try {
         if (data && data.length > 0) {
           const firstRow = data[0];
-          // Obtenemos todos los campos disponibles (Dimensiones y Medidas)
           const fields = queryResponse.fields.dimension_like.concat(queryResponse.fields.measure_like);
           
           if (fields.length > 0) {
-            const firstFieldName = fields[0].name;
-            const cellValue = firstRow[firstFieldName];
-            
-            // Mostramos el valor renderizado (formateado) o el valor plano
+            const cellValue = firstRow[fields[0].name];
             content.innerHTML = cellValue.rendered !== undefined ? cellValue.rendered : cellValue.value;
-          } else {
-            content.innerText = "Falta seleccionar un campo";
           }
-        } else {
-          content.innerText = "No hay datos";
         }
       } catch (err) {
-        content.innerText = "Error de datos";
         console.error("Error en Viz:", err);
       }
       done();
     }
   };
 
-  // Registro seguro para evitar que salga en blanco
   if (typeof looker !== 'undefined') {
     if (looker.plugins && looker.plugins.visualizations) {
       looker.plugins.visualizations.add(vizObject);
