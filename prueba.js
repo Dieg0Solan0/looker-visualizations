@@ -6,60 +6,67 @@
       fontSize: { type: "number", label: "Tamaño de Fuente (px)", default: 28 },
       fontWeight: { 
         type: "string", 
-        label: "Grosor de letra", 
-        default: "500", 
+        label: "Grosol de letra", 
+        default: "700", 
         display: "select", 
         values: [{"Normal": "400"}, {"Media": "500"}, {"Negrita": "700"}] 
       }
     },
 
     create: function(element, config) {
-      // Ajuste para que el contenedor raíz no genere scroll
-      element.style.padding = "0";
-      element.style.margin = "0";
+      // Forzamos al elemento raíz a ocupar TODO el espacio sin excepciones
+      element.style.setProperty('padding', '0', 'important');
+      element.style.setProperty('margin', '0', 'important');
+      element.style.setProperty('border', 'none', 'important');
+      element.style.position = "absolute";
+      element.style.top = "0";
+      element.style.left = "0";
+      element.style.width = "100%";
+      element.style.height = "100%";
       element.style.overflow = "hidden";
-      element.style.display = "flex";
 
       element.innerHTML = `
         <style>
-          #viz-outer-container {
+          #canvas-target {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden; /* Bloquea cualquier scroll interno */
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
           }
-          #viz-content {
+          #text-target {
             width: 100%;
             text-align: center;
             line-height: 1;
             padding: 5px;
             box-sizing: border-box;
-            user-select: none; /* Evita selección accidental al mover tiles */
+            word-wrap: break-word;
           }
         </style>
-        <div id="viz-outer-container">
-          <div id="viz-content">Cargando...</div>
+        <div id="canvas-target">
+          <div id="text-target">Cargando...</div>
         </div>`;
     },
 
     updateAsync: function(data, element, config, queryResponse, details, done) {
-      const container = document.getElementById('viz-outer-container');
-      const content = document.getElementById('viz-content');
+      const canvas = document.getElementById('canvas-target');
+      const text = document.getElementById('text-target');
 
-      // Aplicar estilos del panel
-      if (container) {
-        container.style.backgroundColor = config.backgroundColor || "#ffffff";
+      if (canvas) {
+        canvas.style.backgroundColor = config.backgroundColor || "#ffffff";
       }
       
-      if (content) {
-        content.style.fontSize = (config.fontSize || 28) + "px";
-        content.style.color = config.textColor || "#333333";
-        content.style.fontWeight = config.fontWeight || "500";
-        content.style.fontFamily = "Open Sans, sans-serif";
+      if (text) {
+        text.style.fontSize = (config.fontSize || 28) + "px";
+        text.style.color = config.textColor || "#333333";
+        text.style.fontWeight = config.fontWeight || "700";
+        text.style.fontFamily = "Open Sans, sans-serif";
       }
 
       try {
@@ -67,12 +74,12 @@
           const firstRow = data[0];
           const fields = queryResponse.fields.dimension_like.concat(queryResponse.fields.measure_like);
           if (fields.length > 0) {
-            const cellValue = firstRow[fields[0].name];
-            content.innerHTML = cellValue.rendered !== undefined ? cellValue.rendered : cellValue.value;
+            const cell = firstRow[fields[0].name];
+            text.innerHTML = cell.rendered !== undefined ? cell.rendered : cell.value;
           }
         }
       } catch (err) {
-        console.error("Error en Viz:", err);
+        console.error("Error:", err);
       }
       done();
     }
