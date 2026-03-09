@@ -6,82 +6,86 @@ looker.visualizations.add({
       default: "#ffffff",
       display: "color"
     },
-    textColor: {
+    borderColor: {
       type: "string",
-      label: "Color del Texto",
-      default: "#333333",
+      label: "Color del Borde",
+      default: "#e0e0e0",
       display: "color"
     },
     fontSize: {
       type: "number",
       label: "Tamaño de Fuente (px)",
-      default: 40
-    },
-    fontWeight: {
-      type: "string",
-      label: "Grosor de letra",
-      default: "normal",
-      display: "select",
-      values: [
-        {"Normal": "normal"},
-        {"Negrita": "bold"},
-        {"Ligera": "100"}
-      ]
+      default: 28
     }
   },
 
   create: function(element, config) {
     element.innerHTML = `
       <style>
-        .canvas-container {
+        @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap');
+        
+        .main-container {
           height: 100%;
           display: flex;
           justify-content: center;
           align-items: center;
-          text-align: center;
-          width: 100%;
-          transition: background-color 0.3s;
+          padding: 10px;
+          box-sizing: border-box;
         }
-        #viz-text {
-          font-family: 'Open Sans', Helvetica, Arial, sans-serif;
-          line-height: 1.2;
+        .card {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          width: 95%;
+          height: 90%;
+          border: 1px solid #e0e0e0;
+          border-radius: 4px;
+          text-align: center;
+          font-family: 'Open Sans', sans-serif;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        #viz-value {
+          color: #000000;
           width: 100%;
-          padding: 20px;
         }
       </style>
-      <div class="canvas-container" id="viz-canvas">
-        <div id="viz-text"></div>
+      <div class="main-container">
+        <div class="card" id="viz-card">
+          <div id="viz-value">Cargando...</div>
+        </div>
       </div>
     `;
   },
 
   updateAsync: function(data, element, config, queryResponse, details, done) {
-    const canvas = document.getElementById('viz-canvas');
-    const textTarget = document.getElementById('viz-text');
+    const card = document.getElementById('viz-card');
+    const valueDisplay = document.getElementById('viz-value');
 
-    // 1. Aplicar estilos visuales del panel
-    canvas.style.backgroundColor = config.backgroundColor || "#ffffff";
-    textTarget.style.color = config.textColor || "#333333";
-    textTarget.style.fontSize = `${config.fontSize}px`;
-    textTarget.style.fontWeight = config.fontWeight || "normal";
+    // Aplicar estilos desde el panel
+    card.style.backgroundColor = config.backgroundColor || "#ffffff";
+    card.style.borderColor = config.borderColor || "#e0e0e0";
+    valueDisplay.style.fontSize = `${config.fontSize}px`;
 
-    // 2. Lógica para extraer el valor (Dimensión o Medida)
-    let displayValue = "No data";
-
-    if (data && data.length > 0) {
-      // Buscamos el primer campo disponible (priorizando dimensiones para tu caso)
-      const field = queryResponse.fields.dimension_like[0] || queryResponse.fields.measure_like[0];
-      
-      if (field) {
-        const rawValue = data[0][field.name];
-        // Usamos el valor renderizado (formateado) o el valor plano
-        displayValue = LookerCharts.Utils.htmlForCell(rawValue) || rawValue.value;
-      }
+    // Extraer el dato de forma segura
+    try {
+        if (data && data.length > 0) {
+            // Buscamos la primera celda del primer registro
+            const firstRow = data[0];
+            const firstFieldName = queryResponse.fields.dimension_like[0]?.name || queryResponse.fields.measure_like[0]?.name;
+            
+            if (firstFieldName && firstRow[firstFieldName]) {
+                const cell = firstRow[firstFieldName];
+                // Intentamos obtener el valor renderizado, si no, el valor bruto
+                valueDisplay.innerText = cell.rendered || cell.value || "";
+            } else {
+                valueDisplay.innerText = "Sin datos";
+            }
+        }
+    } catch (error) {
+        valueDisplay.innerText = "Error de datos";
+        console.error(error);
     }
 
-    textTarget.innerHTML = displayValue;
-    
-    // Indicar a Looker que la visualización terminó de cargar
     done();
   }
 });
